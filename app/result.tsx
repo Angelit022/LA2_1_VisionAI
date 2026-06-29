@@ -130,7 +130,10 @@ export default function ResultScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+    >
       <Text style={styles.sectionTitle}>Objects</Text>
       {analysis?.objects.map((obj, index) => (
         <Text key={index} style={styles.listItem}>

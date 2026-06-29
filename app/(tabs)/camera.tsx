@@ -1,12 +1,23 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import { useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import {
+    SafeAreaView,
+    useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 export default function CameraScreen() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView | null>(null);
+  const insets = useSafeAreaInsets();
 
   async function takePicture() {
     if (!cameraRef.current) return;
@@ -25,28 +36,39 @@ export default function CameraScreen() {
   }
 
   if (!permission.granted) {
+    const permissionText =
+      Platform.OS === "ios"
+        ? 'TaskFlow needs camera access. Tap below, then choose "Allow" in the dialog.'
+        : "TaskFlow needs camera access. Tap below to grant the permission.";
+
     return (
-      <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>
-          We need your permission to use the camera
-        </Text>
+      <SafeAreaView
+        style={[
+          styles.permissionContainer,
+          { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
+        ]}
+      >
+        <Text style={styles.permissionText}>{permissionText}</Text>
         <TouchableOpacity
           style={styles.permissionButton}
           onPress={requestPermission}
         >
           <Text style={styles.permissionButtonText}>Grant Permission</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <CameraView ref={cameraRef} style={styles.camera} facing="back" />
-      <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+      <TouchableOpacity
+        style={[styles.captureButton, { bottom: insets.bottom + 24 }]}
+        onPress={takePicture}
+      >
         <Text style={styles.captureButtonText}>Capture</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 

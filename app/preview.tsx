@@ -1,5 +1,13 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
+} from "react-native";
 
 type PromptKey = "academic" | "safety" | "inventory";
 
@@ -16,6 +24,10 @@ export default function PreviewScreen() {
     });
   }
 
+  const { width, height } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const imageHeight = Math.min(height * 0.55, 500);
+
   if (!photoUri) {
     return (
       <View style={styles.emptyContainer}>
@@ -25,8 +37,21 @@ export default function PreviewScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Image source={{ uri: photoUri }} style={styles.preview} />
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
+      <Image
+        source={{ uri: photoUri }}
+        style={[
+          styles.preview,
+          {
+            width: isTablet ? 600 : "100%",
+            alignSelf: "center",
+            height: imageHeight,
+          },
+        ]}
+      />
       <View style={styles.personaRow}>
         <TouchableOpacity
           style={styles.personaButton}
@@ -55,13 +80,14 @@ export default function PreviewScreen() {
           <Text style={styles.buttonText}>Retake</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
-  preview: { flex: 1, resizeMode: "contain" },
+  contentContainer: { paddingBottom: 24, alignItems: "center" },
+  preview: { resizeMode: "contain" },
   actionRow: {
     flexDirection: "row",
     justifyContent: "space-around",
