@@ -1,6 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { imageToBase64 } from "../lib/gemini";
 
 export default function PreviewScreen() {
   const router = useRouter();
@@ -9,9 +8,7 @@ export default function PreviewScreen() {
   async function handleAnalyze() {
     if (!photoUri) return;
 
-    const base64Image = await imageToBase64(photoUri);
-    console.log("base64Image length:", base64Image.length);
-    router.push({ pathname: "/result", params: { base64Image } });
+    router.push({ pathname: "/result", params: { photoUri } });
   }
 
   if (!photoUri) {

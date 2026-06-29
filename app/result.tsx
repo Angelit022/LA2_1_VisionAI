@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { analyzeImage } from "../lib/gemini";
+import { analyzeImage, imageToBase64 } from "../lib/gemini";
 import { detectObjects } from "../lib/roboflow";
 
 const ANALYSIS_PROMPT = `Analyze this image. Identify:
@@ -33,7 +33,7 @@ type AnalysisResult = {
 };
 
 export default function ResultScreen() {
-  const { base64Image } = useLocalSearchParams<{ base64Image: string }>();
+  const { photoUri } = useLocalSearchParams<{ photoUri: string }>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
@@ -46,8 +46,18 @@ export default function ResultScreen() {
       .trim();
   }
 
+  function parseResultText(text: string) {
+    const cleaned = stripMarkdownFences(text);
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && end > start) {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    }
+    return JSON.parse(cleaned);
+  }
+
   const runAnalysis = async () => {
-    if (!base64Image) {
+    if (!photoUri) {
       setError("No image provided.");
       setLoading(false);
       return;
@@ -59,6 +69,7 @@ export default function ResultScreen() {
     setDetections([]);
 
     try {
+      const base64Image = await imageToBase64(photoUri);
       const [json, found] = await Promise.all([
         analyzeImage(base64Image, ANALYSIS_PROMPT),
         detectObjects(base64Image),
@@ -69,12 +80,12 @@ export default function ResultScreen() {
         throw new Error("Empty response from Gemini");
       }
 
-      const cleanedText = stripMarkdownFences(textPart);
-      const parsed = JSON.parse(cleanedText) as AnalysisResult;
+      const parsed = parseResultText(textPart) as AnalysisResult;
       setAnalysis(parsed);
       setDetections(found);
     } catch (err) {
-      setError("Could not analyze this image. Please try again.");
+      const message = err instanceof Error ? err.message : String(err);
+      setError(`Could not analyze this image. ${message}`);
     } finally {
       setLoading(false);
     }
@@ -82,9 +93,9 @@ export default function ResultScreen() {
 
   useEffect(() => {
     runAnalysis();
-  }, [base64Image]);
+  }, [photoUri]);
 
-  if (!base64Image) {
+  if (!photoUri) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>No image to analyze</Text>
