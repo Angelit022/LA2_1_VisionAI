@@ -11,19 +11,11 @@ import {
 import { analyzeImage, imageToBase64 } from "../lib/gemini";
 import { detectObjects } from "../lib/roboflow";
 
-const ANALYSIS_PROMPT = `Analyze this image. Identify:
-1. Objects - list the distinct physical objects you see
-2. Context - briefly describe the setting or scene
-3. Activities - what activity appears to be happening, if any
-4. Recommendations - one practical suggestion based on the scene
-Respond ONLY with valid JSON in this exact shape, no extra text:
-{
-  "objects": ["...", "..."],
-  "context": "...",
-  "activities": "...",
-  "recommendations": "..."
-}
-`;
+const PROMPTS = {
+  academic: `Act as a university professor. Looking at this image, provide an academic-style analysis: identify the objects present, describe the educational context, and give one piece of constructive feedback. Respond ONLY with valid JSON in this exact shape: { "objects": ["...", "..."], "context": "...", "activities": "...", "recommendations": "..." }`,
+  safety: `Act as a workplace safety inspector. Looking at this image, identify any visible hazards, risks, or safety concerns. If none are visible, state that clearly. Respond ONLY with valid JSON in this exact shape: { "objects": ["...", "..."], "context": "...", "activities": "...", "recommendations": "..." }`,
+  inventory: `Act as an asset management clerk. Looking at this image, list every visible physical asset as a clean inventory list. In the other fields, keep the responses short and factual. Respond ONLY with valid JSON in this exact shape: { "objects": ["...", "..."], "context": "...", "activities": "...", "recommendations": "..." }`,
+} as const;
 
 type AnalysisResult = {
   objects: string[];
@@ -32,8 +24,19 @@ type AnalysisResult = {
   recommendations: string;
 };
 
+type PromptKey = keyof typeof PROMPTS;
+
 export default function ResultScreen() {
-  const { photoUri } = useLocalSearchParams<{ photoUri: string }>();
+  const params = useLocalSearchParams<{
+    photoUri: string;
+    promptKey?: string;
+  }>();
+  const { photoUri, promptKey } = params;
+  const selectedPromptKey =
+    promptKey && PROMPTS[promptKey as PromptKey]
+      ? (promptKey as PromptKey)
+      : "academic";
+  const selectedPrompt = PROMPTS[selectedPromptKey];
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
@@ -71,7 +74,7 @@ export default function ResultScreen() {
     try {
       const base64Image = await imageToBase64(photoUri);
       const [json, found] = await Promise.all([
-        analyzeImage(base64Image, ANALYSIS_PROMPT),
+        analyzeImage(base64Image, selectedPrompt),
         detectObjects(base64Image),
       ]);
 
