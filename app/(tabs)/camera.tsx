@@ -1,11 +1,12 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useRef, useState } from "react";
+import { useRouter } from "expo-router";
+import { useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function CameraScreen() {
+  const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView | null>(null);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   async function takePicture() {
     if (!cameraRef.current) return;
@@ -13,7 +14,7 @@ export default function CameraScreen() {
     try {
       const result = await cameraRef.current.takePictureAsync({ quality: 0.7 });
       console.log("Photo captured:", result.uri);
-      setPhotoUri(result.uri);
+      router.push({ pathname: "/preview", params: { photoUri: result.uri } });
     } catch (error) {
       console.error("Failed to take picture:", error);
     }
@@ -45,7 +46,6 @@ export default function CameraScreen() {
       <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
         <Text style={styles.captureButtonText}>Capture</Text>
       </TouchableOpacity>
-      {photoUri ? <Text style={styles.photoText}>{photoUri}</Text> : null}
     </View>
   );
 }
